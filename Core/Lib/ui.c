@@ -23,6 +23,13 @@ static int temp_text_width(const char* num, const FontDef* numFont,
   return w;
 }
 
+static int labeled_temp_width(const char* label, const FontDef* labelFont,
+                              const char* num, const FontDef* numFont,
+                              int degBox, const FontDef* unitFont) {
+  return text_width(label, labelFont) + 1
+       + temp_text_width(num, numFont, degBox, unitFont);
+}
+
 void UI_SetCurrentTemp(int t){ s_cur=t; }
 void UI_SetSetpoint(int t){ s_set=t; }
 
@@ -37,16 +44,40 @@ void UI_Render(void){
   // 좌상: 로고
   //SSD1306_DrawText(8,8,"UNIOT",&Font_11x18);
 
-  {
-    const int LX=0, LY=0, LW=64, LH=32;
-    const char* t="UNIOT";
-    int w = text_width(t,&Font_11x18);
-    int x = LX + (LW - w)/2;
-    int y = LY + (LH - Font_11x18.height)/2;
-    SSD1306_DrawText(x,y,t,&Font_11x18);
-  }
 
+  //  {const int LX=0, LY=0, LW=64, LH=32;
+  //  const char* t="UNIOT";
+  //  int w = text_width(t,&Font_11x18);
+  //  int x = LX + (LW - w)/2;
+  //  int y = LY + (LH - Font_11x18.height)/2;
+  // SSD1306_DrawText(x,y,t,&Font_11x18);}
 
+  // === 좌측(0~63): SV (세팅온도, 중간 크기) ===
+   {
+     const int BX=0, BY=32, BW=64, BH=32;
+     const int DEG=5; // 5x5 도트
+     snprintf(buf, sizeof(buf), "%d", s_set);
+
+     // 전체 폭: "SV" + ' ' + "nn" + " ° " + "C"
+     int w = labeled_temp_width("SV", &Font_7x10, buf, &Font_11x18, DEG, &Font_7x10);
+     int x = BX + (BW - w)/2;
+     int y_num = BY + (BH - Font_11x18.height)/2;
+     int y_lbl = y_num + (Font_11x18.height - Font_7x10.height); // 같은 베이스라인 느낌
+
+     // "SV"
+     int nx = SSD1306_DrawText(x, y_lbl, "SV", &Font_7x10);
+     nx += 1; // 라벨 뒤 공백
+
+     // 숫자
+     nx = SSD1306_DrawText(nx, y_num, buf, &Font_11x18);
+
+     // ° (세로 중앙 정렬)
+     int dy = y_num + (Font_11x18.height - DEG)/2;
+     SSD1306_DrawDegree5x5(nx + 1, dy);
+
+     // 'C'
+     SSD1306_DrawText(nx + 1 + DEG + 1, y_num, "C", &Font_7x10);
+   }
 
   // 좌하: 현재온도 "25 °C"
   //snprintf(buf,sizeof(buf),"%d",s_cur);
@@ -55,17 +86,15 @@ void UI_Render(void){
   //SSD1306_DrawText(nx+9,40,"C",&Font_7x10);
     // 좌하(0,32,64,32) 중앙 : "nn °C"
 
-   {
-      const int BX=0, BY=32, BW=64, BH=32;
-      snprintf(buf,sizeof(buf),"%d",s_cur);
-      int w=temp_text_width(buf,&Font_7x10,5,&Font_7x10);
-      int x= BX + (BW-w)/2;
-      int y= BY + (BH-Font_7x10.height)/2;
-      int nx=SSD1306_DrawText(x,y,buf,&Font_7x10);
-      int dy = y + (Font_7x10.height - 5 - 6);  // = 10-5-2 → 3픽셀 위
-      SSD1306_DrawDegree5x5(nx+1,dy);
-      SSD1306_DrawText(nx+8,y,"C",&Font_7x10);
-    }
+  // {const int BX=0, BY=32, BW=64, BH=32;
+   //   snprintf(buf,sizeof(buf),"%d",s_cur);
+    //  int w=temp_text_width(buf,&Font_7x10,5,&Font_7x10);
+    //  int x= BX + (BW-w)/2;
+    //  int y= BY + (BH-Font_7x10.height)/2;
+    //  int nx=SSD1306_DrawText(x,y,buf,&Font_7x10);
+    //  int dy = y + (Font_7x10.height - 5 - 6);  // = 10-5-2 → 3픽셀 위
+   //   SSD1306_DrawDegree5x5(nx+1,dy);
+    //  SSD1306_DrawText(nx+8,y,"C",&Font_7x10);}
 
   // 우측: 세팅온도 크게
   //snprintf(buf,sizeof(buf),"%d",s_set);

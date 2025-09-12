@@ -98,7 +98,7 @@ int main(void)
   SSD1306_BindI2C(&hi2c1);
    SSD1306_Init();
 
-   UI_SetCurrentTemp(25.5);
+   UI_SetCurrentTemp(25);
    UI_SetSetpoint(30);
    UI_Render();
   /* USER CODE END 2 */
