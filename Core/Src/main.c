@@ -95,8 +95,8 @@ int main(void)
   MX_GPIO_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
-  SSD1306_BindI2C(&hi2c1);
-   SSD1306_Init();
+  ssh1106_BindI2C(&hi2c1);
+   ssh1106_Init();
 
    UI_SetCurrentTemp(25);
    UI_SetSetpoint(30);
