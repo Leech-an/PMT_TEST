@@ -34,7 +34,6 @@ void UI_SetCurrentTemp(int t){ s_cur=t; }
 void UI_SetSetpoint(int t){ s_set=t; }
 
 void UI_Render(void){
-  char buf[16];
   ssh1106_Clear();
 
   // 구분선
@@ -44,84 +43,97 @@ void UI_Render(void){
   // 좌상: 로고
   //ssh1106_DrawText(8,8,"UNIOT",&Font_11x18);
 
+	{
+		const int LX = 0, LY = 0, LW = 64, LH = 32;
+		const char *t = "UNIOT";
+		int w = text_width(t, &Font_11x18);
+		int x = LX + (LW - w) / 2;
+		int y = LY + (LH - Font_11x18.height) / 2;
+		ssh1106_DrawText(x, y, t, &Font_11x18);
+	}
 
-  //  {const int LX=0, LY=0, LW=64, LH=32;
-  //  const char* t="UNIOT";
-  //  int w = text_width(t,&Font_11x18);
-  //  int x = LX + (LW - w)/2;
-  //  int y = LY + (LH - Font_11x18.height)/2;
-  // ssh1106_DrawText(x,y,t,&Font_11x18);}
+	// 좌하(0,32,64,32) 중앙 : "sv nn ° C"
+	{
+		const int BX = 0, BY = 32, BW = 64, BH = 32;
+		const int DEG = 5;          // ° 5x5
+		const int DEG_RAISE = 4;    // °를 위로 올릴 픽셀 수
 
-  // === 좌측(0~63): SV (세팅온도, 중간 크기) ===
-   {
-     const int BX=0, BY=32, BW=64, BH=32;
-     const int DEG=5; // 5x5 도트
-     snprintf(buf, sizeof(buf), "%d", s_set);
+		char buf[16];
+		snprintf(buf, sizeof(buf), "%d", s_set);
 
-     // 전체 폭: "SV" + ' ' + "nn" + " ° " + "C"
-     int w = labeled_temp_width("SV", &Font_7x10, buf, &Font_11x18, DEG, &Font_7x10);
-     int x = BX + (BW - w)/2;
-     int y_num = BY + (BH - Font_11x18.height)/2;
-     int y_lbl = y_num + (Font_11x18.height - Font_7x10.height); // 같은 베이스라인 느낌
+		const FontDef *LBL = &Font_7x10;   // "sv"
+		const FontDef *NUM = &Font_11x18;  // 숫자
+		const FontDef *CF = &Font_11x18;  // 'C'
 
-     // "SV"
-     int nx = ssh1106_DrawText(x, y_lbl, "SV", &Font_7x10);
-     nx += 1; // 라벨 뒤 공백
+		// 전체 폭: "sv"(작게) + 공백1 + 숫자 + 공백1 + ° + 공백1 + C
+		int w = labeled_temp_width("sv", LBL, buf, NUM, DEG, CF);
 
-     // 숫자
-     nx = ssh1106_DrawText(nx, y_num, buf, &Font_11x18);
+		// 가로 중앙
+		int x = BX + (BW - w) / 2;
+		if (x < BX + 2)
+			x = BX + 2;
 
-     // ° (세로 중앙 정렬)
-     int dy = y_num + (Font_11x18.height - DEG)/2;
-     ssh1106_DrawDegree5x5(nx + 1, dy);
+		// 세로 중앙: 숫자 기준
+		int y_num = BY + (BH - NUM->height) / 2;
+		int y_lbl = y_num + (NUM->height - LBL->height);  // 라벨 베이스라인 맞춤
 
-     // 'C'
-     ssh1106_DrawText(nx + 1 + DEG + 1, y_num, "C", &Font_7x10);
-   }
+		// "sv"
+		int nx = ssh1106_DrawText(x, y_lbl, "sv", LBL);
+		nx += 1; // 공백 1px
 
-  // 좌하: 현재온도 "25 °C"
-  //snprintf(buf,sizeof(buf),"%d",s_cur);
- // int nx = ssh1106_DrawText(8,40,buf,&Font_7x10);
-  //ssh1106_DrawDegree5x5(nx+2,40);
-  //ssh1106_DrawText(nx+9,40,"C",&Font_7x10);
-    // 좌하(0,32,64,32) 중앙 : "nn °C"
+		// 숫자
+		nx = ssh1106_DrawText(nx, y_num, buf, NUM);
 
-  // {const int BX=0, BY=32, BW=64, BH=32;
-   //   snprintf(buf,sizeof(buf),"%d",s_cur);
-    //  int w=temp_text_width(buf,&Font_7x10,5,&Font_7x10);
-    //  int x= BX + (BW-w)/2;
-    //  int y= BY + (BH-Font_7x10.height)/2;
-    //  int nx=ssh1106_DrawText(x,y,buf,&Font_7x10);
-    //  int dy = y + (Font_7x10.height - 5 - 6);  // = 10-5-2 → 3픽셀 위
-   //   ssh1106_DrawDegree5x5(nx+1,dy);
-    //  ssh1106_DrawText(nx+8,y,"C",&Font_7x10);}
+		// °
+		int nxDeg = nx + 1;
+		int dy = y_num + (NUM->height - DEG) / 2 - DEG_RAISE;
+		if (dy < 0)
+			dy = 0;
+		ssh1106_DrawDegree5x5(nxDeg, dy);
 
-  // 우측: 세팅온도 크게
-  //snprintf(buf,sizeof(buf),"%d",s_set);
-  //int bx = ssh1106_DrawText(74,16,buf,&Font_16x26);
-  //ssh1106_DrawDegree5x5(bx+4,20);
-  //ssh1106_DrawText(bx+16,16,"C",&Font_16x26);
+		// 'C'
+		ssh1106_DrawText(nxDeg + DEG + 1, y_num, "C", CF);
+	}
 
-     // 우측(64,0,64,64) 중앙 : "nn °C" (경계 마진 포함)
-     {
-    	 const int RX=64, RY=0, RW=64, RH=64, MARGIN=2;
-    	   char buf[16];
-    	   snprintf(buf,sizeof(buf), "%d", s_set);
-    	   // 전체 폭: 숫자 + (공백1 + °5 + 공백1) + 'C'
-    	   int w  = temp_text_width(buf, &Font_16x26, 5, &Font_16x26);
-    	   int sx = RX + (RW - w)/2;
-    	   int sy = RY + (RH - Font_16x26.height)/2;
-    	   if (sx < RX + MARGIN) sx = RX + MARGIN;
-    	   // 숫자
-    	   int nx = ssh1106_DrawText(sx, sy, buf, &Font_16x26);
-    	   // ° (왼쪽 공백 1px 반영 + 수직 중앙 정렬)
-    	   int nxDeg = nx + 1;                              // ← 공백 1px
-    	   int dy    = sy + (Font_16x26.height - 20)/2;      // 5x5를 세로 중앙
-    	   ssh1106_DrawDegree5x5(nxDeg, dy);
-    	   // 'C' (°5px + 공백1px 뒤)
-    	   int nxC = nxDeg + 5 + 1;
-    	   ssh1106_DrawText(nxC, sy, "C", &Font_16x26);
-     }
+	/* ---------- RIGHT (64~127 x 0~63): 위에 'cv', 아래 큰 숫자 + °(살짝 위) + C ---------- */
+	{
+		const int RX = 64, RY = 0, RW = 64, RH = 64, MARGIN = 2;
+		const int DEG = 5;          // ° 5x5
+		const int DEG_RAISE = 5;    // °를 위로 띄우는 픽셀(1~3에서 취향)
 
-  ssh1106_Update();
+		char buf[16];
+		snprintf(buf, sizeof(buf), "%d", s_cur);   // cv = 현재온도
+
+		// 폰트: 라벨 작게, 숫자/단위는 큼
+		const FontDef *LBL = &Font_7x10;    // "cv"
+		const FontDef *NUM = &Font_16x26;   // 숫자(두 자리까지 안전)
+		const FontDef *CF = &Font_16x26;   // 'C'도 숫자와 동일 크기
+
+		/* 1) 윗줄: 'cv' (작게, 수평 중앙) */
+		int w_lbl = text_width("cv", LBL);
+		int x_lbl = RX + (RW - w_lbl) / 2;
+		int y_lbl = RY + 10; // 상단에서 약간 내려오게
+		ssh1106_DrawText(x_lbl, y_lbl, "cv", LBL);
+
+		/* 2) 아랫줄: "nn ° C" (큰 폰트, 수평 중앙) */
+		int w_num = temp_text_width(buf, NUM, DEG, CF);   // 숫자+°+C 전체폭
+		int sx = RX + (RW - w_num) / 2;
+		if (sx < RX + MARGIN)
+			sx = RX + MARGIN;
+		// 숫자 줄은 화면 중앙보다 약간 아래로 내려 균형
+		int y_num = RY + (RH - NUM->height) / 2 + 4;
+
+		// 숫자
+		int nx = ssh1106_DrawText(sx, y_num, buf, NUM);
+
+		// ° : 세로 중앙에서 살짝 위로
+		int dy = y_num + (NUM->height - DEG) / 2 - DEG_RAISE;
+		if (dy < 0)
+			dy = 0;
+		ssh1106_DrawDegree5x5(nx + 1, dy);         // 숫자 뒤 공백 1px
+
+		// 'C' : 숫자와 같은 폰트/베이스라인
+		ssh1106_DrawText(nx + 1 + DEG + 1, y_num, "C", CF);
+	}
+	ssh1106_Update();
 }

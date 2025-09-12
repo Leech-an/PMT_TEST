@@ -98,7 +98,7 @@ int main(void)
   ssh1106_BindI2C(&hi2c1);
    ssh1106_Init();
 
-   UI_SetCurrentTemp(25);
+   UI_SetCurrentTemp(35);
    UI_SetSetpoint(30);
    UI_Render();
   /* USER CODE END 2 */
